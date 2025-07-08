@@ -1,46 +1,62 @@
-import {
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { JwtService } from '@nestjs/jwt';
-import { TokenDTO } from './dto/token.dto';
-import { UserService } from 'src/user/user.service';
-import { PayloadDTO } from './dto/payload.dto';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { AuthRepository } from './auth.repository';
+import { TokenDto } from './dto/token.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
+    private readonly authRepository: AuthRepository,
   ) {}
 
-  async login(code: string) {
+  async login(code: string): Promise<TokenDto> {
     const clientId = this.configService.get<string>('CLIENT_ID');
     const clientSecret = this.configService.get<string>('CLIENT_SECRET');
-    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
-      'base64',
-    );
-    const headers = {
-      Authorization: `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    };
 
-    const body = new URLSearchParams({});
-    body.append('grant_type', 'authorization_code');
-    body.append('code', code);
-    body.append('code_verifier', 'code_challenge');
-
-    return (
+    const response = (
       await firstValueFrom(
-        this.httpService.post('https://api.idp.gistory.me/oauth/token', body, {
-          headers,
+        this.httpService.post(
+          'https://api.idp.gistory.me/oauth/token',
+          {
+            body: new URLSearchParams({
+              grant_type: 'authorization_code',
+              code: code,
+              code_verifier: 'code_challenge',
+            }),
+          },
+          {
+            headers: {
+              Authorization: `Basic ${Buffer.from(
+                `${clientId}:${clientSecret}`,
+              ).toString('base64')}`,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+          },
+        ),
+      )
+    ).data;
+
+    const userInfo = (
+      await firstValueFrom(
+        this.httpService.get('https://api.idp.gistory.me/oauth/userinfo', {
+          headers: {
+            Authorization: `Bearer ${response.access_token}`,
+          },
         }),
       )
     ).data;
+
+    if (!userInfo) {
+      this.authRepository.findOrCreateUser(userInfo);
+
+      return {
+        access_token: response.access_token,
+      };
+    }
+    throw new UnauthorizedException();
   }
 }

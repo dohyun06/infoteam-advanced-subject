@@ -20,6 +20,10 @@ model Post {
 }
 
 model User{
-  id        String  @id  @default("")
-  password  String  @default("")
+  uuid        String  @id  @default(uuid())
+  sub         String
+  name        String
+  email       String
+  studentId   String
+  phoneNumber String
 }

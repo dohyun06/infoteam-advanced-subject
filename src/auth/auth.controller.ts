@@ -15,8 +15,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { TokenDTO } from './dto/token.dto';
-import { AuthGuard } from '@nestjs/passport';
+import { TokenDto } from './dto/token.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -25,7 +24,7 @@ export class AuthController {
   @Post('login')
   @ApiOperation({ summary: 'create a user' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async login(@Query() { code }: LoginDto) {
+  async login(@Query() { code }: LoginDto): Promise<TokenDto> {
     return await this.authService.login(code);
   }
 }
