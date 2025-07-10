@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserDto } from './dto/user.dto';
-import * as bcrypt from 'bcryptjs';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class UserService {
@@ -15,7 +15,7 @@ export class UserService {
     return await this.prisma.user
       .findUnique({ where: { uuid: uuid } })
       .then((user) => {
-        if (!user) throw new NotFoundException('ID is not found');
+        if (!user) throw new NotFoundException('User uuid is not found');
         return user;
       });
   }
@@ -26,7 +26,35 @@ export class UserService {
         where: { uuid: uuid },
       })
       .catch((err) => {
-        throw new InternalServerErrorException();
+        if (err === PrismaClientKnownRequestError) {
+          if (err.code === 'P2025') {
+            throw new NotFoundException('User uuid is not found');
+          }
+          throw new InternalServerErrorException('Database Error');
+        }
+        throw new InternalServerErrorException('Internal Server Error');
+      });
+  }
+
+  async subscribeCategory(uuid: string, category: string) {
+    return await this.prisma.user
+      .update({
+        where: { uuid: uuid },
+        data: {
+          subcriptions: { connect: { name: category } },
+        },
+        include: {
+          subcriptions: true,
+        },
+      })
+      .catch((err) => {
+        if (err === PrismaClientKnownRequestError) {
+          if (err.code === 'P2025') {
+            throw new NotFoundException('User uuid is not found');
+          }
+          throw new InternalServerErrorException('Database Error');
+        }
+        throw new InternalServerErrorException('Internal Server Error');
       });
   }
 }

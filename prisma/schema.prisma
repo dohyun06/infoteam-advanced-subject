@@ -42,5 +42,5 @@ model User{
   studentId   String
   phoneNumber String
 
-  subscribes   Category[] @relation("UserSubscription")
+  subcriptions   Category[] @relation("UserSubscription")
 }

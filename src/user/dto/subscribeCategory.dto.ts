@@ -1,8 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 
-export class ChangePasswordDTO {
+export class SubscribeCategoryDto {
   @IsString()
   @ApiProperty({ example: 'abcde' })
-  password: string;
+  uuid: string;
+
+  @IsString()
+  @ApiProperty({ example: 'abcde' })
+  category: string;
 }
