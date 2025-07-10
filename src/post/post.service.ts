@@ -5,63 +5,120 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePostDTO } from './dto/createPost.dto';
-import { GetPostDTO } from './dto/getPost.dto';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class PostService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getPosts(): Promise<GetPostDTO[]> {
-    return await this.prisma.post.findMany();
-  }
-
-  async getPost(id: number): Promise<GetPostDTO> {
+  async getPost(uuid: string) {
     return await this.prisma.post
       .findUnique({
         where: {
-          id: id,
+          uuid: uuid,
         },
       })
       .then((post) => {
-        if (!post) throw new NotFoundException(`${id} is not found`);
+        if (!post) throw new NotFoundException('Post uuid is not found');
         return post;
       });
   }
 
-  async makePost(body: CreatePostDTO): Promise<CreatePostDTO> {
-    return await this.prisma.post.create({
-      data: {
-        title: body.title,
-        content: body.content,
-      },
-    });
+  async makePost(body: CreatePostDTO) {
+    return await this.prisma.post
+      .create({
+        data: {
+          title: body.title,
+          content: body.content,
+          category: {
+            connect: { name: body.category },
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          throw new InternalServerErrorException('Database Error');
+        }
+        throw new InternalServerErrorException('Internal Server Error');
+      });
   }
 
-  async updatePost(id: number, body: CreatePostDTO): Promise<CreatePostDTO> {
+  async updatePost(uuid: string, body: CreatePostDTO) {
     return await this.prisma.post
       .update({
         where: {
-          id: id,
+          uuid: uuid,
         },
         data: {
           title: body.title,
           content: body.content,
+          category: {
+            connect: { name: body.category },
+          },
         },
       })
-      .catch((err) => {
-        throw new InternalServerErrorException();
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new NotFoundException('Post uuid is not found');
+          }
+          throw new InternalServerErrorException('Database Error');
+        }
+        throw new InternalServerErrorException('Internal Server Error');
       });
   }
 
-  async deletePost(id: number): Promise<CreatePostDTO> {
+  async deletePost(uuid: string) {
     return await this.prisma.post
       .delete({
         where: {
-          id: id,
+          uuid: uuid,
         },
       })
-      .catch((err) => {
-        throw new InternalServerErrorException();
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new NotFoundException('Post uuid is not found');
+          }
+          throw new InternalServerErrorException('Database Error');
+        }
+        throw new InternalServerErrorException('Internal Server Error');
+      });
+  }
+
+  async addCategory(category: string) {
+    return await this.prisma.category
+      .create({
+        data: {
+          name: category,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          throw new InternalServerErrorException('Database Error');
+        }
+        throw new InternalServerErrorException('Internal Server Error');
+      });
+  }
+
+  async deleteCategory(category: string) {
+    return await this.prisma.category
+      .update({
+        where: {
+          name: category,
+        },
+        data: {
+          status: 'INACTIVE',
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new NotFoundException('Category name is not found');
+          }
+          throw new InternalServerErrorException('Database Error');
+        }
+        throw new InternalServerErrorException('Internal Server Error');
       });
   }
 }

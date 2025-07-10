@@ -9,4 +9,8 @@ export class CreatePostDTO {
   @IsString()
   @ApiProperty({ example: 'this is content' })
   readonly content: string;
+
+  @IsString()
+  @ApiProperty({ example: 'this is category' })
+  readonly category: string;
 }

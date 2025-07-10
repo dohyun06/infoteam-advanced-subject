@@ -16,77 +16,66 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiParam,
 } from '@nestjs/swagger';
 import { PostService } from './post.service';
 import { CreatePostParamDTO } from './dto/createPostParam.dto';
-import { GetPostDTO } from './dto/getPost.dto';
 import { HttpExceptionFilter } from 'src/filter/http-exception.filter';
+import { CategoryDto } from './dto/category.dto';
 
 @Controller('post')
 @UseFilters(new HttpExceptionFilter())
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  @Get()
-  @ApiOperation({ summary: 'get posts' })
-  @ApiOkResponse({ type: CreatePostDTO, description: 'Return posts' })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async sendPosts(): Promise<GetPostDTO[]> {
-    return await this.postService.getPosts();
-  }
-
-  @Get(':id')
+  @Get(':uuid')
   @ApiOperation({ summary: 'get a post' })
   @ApiOkResponse({ type: CreatePostDTO, description: 'Return posts' })
-  @ApiParam({
-    name: 'id',
-    description: 'ID of the post',
-    type: Number,
-  })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async sendPost(@Param() { id }: CreatePostParamDTO): Promise<GetPostDTO> {
-    return await this.postService.getPost(id);
+  async sendPost(@Param() { uuid }: CreatePostParamDTO) {
+    return await this.postService.getPost(uuid);
   }
 
   @Post()
   @ApiOperation({ summary: 'generate a post' })
   @ApiBody({ type: CreatePostDTO })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async createPost(@Body() body: CreatePostDTO): Promise<CreatePostDTO> {
+  async createPost(@Body() body: CreatePostDTO) {
     return await this.postService.makePost(body);
   }
 
-  @Put(':id')
+  @Put(':uuid')
   @ApiOperation({ summary: 'update a post' })
-  @ApiParam({
-    name: 'id',
-    description: 'ID of the post',
-    type: Number,
-  })
   @ApiBody({ type: CreatePostDTO })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async updatePost(
-    @Param() { id }: CreatePostParamDTO,
+    @Param() { uuid }: CreatePostParamDTO,
     @Body() body: CreatePostDTO,
-  ): Promise<CreatePostDTO> {
-    return await this.postService.updatePost(id, body);
+  ) {
+    return await this.postService.updatePost(uuid, body);
   }
 
-  @Delete(':id')
+  @Delete(':uuid')
   @ApiOperation({ summary: 'delete a post' })
-  @ApiParam({
-    name: 'id',
-    description: 'id of the post',
-    type: Number,
-  })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async deletePost(
-    @Param() { id }: CreatePostParamDTO,
-  ): Promise<CreatePostDTO> {
-    return await this.postService.deletePost(id);
+  async deletePost(@Param() { uuid }: CreatePostParamDTO) {
+    return await this.postService.deletePost(uuid);
+  }
+
+  @Post('category/:category')
+  @ApiOperation({ summary: 'add a category' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async addCategory(@Param() { category }: CategoryDto) {
+    return await this.postService.addCategory(category);
+  }
+
+  @Delete('category/:category')
+  @ApiOperation({ summary: 'delete a category' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async deleteCategory(@Param() { category }: CategoryDto) {
+    return await this.postService.deleteCategory(category);
   }
 }

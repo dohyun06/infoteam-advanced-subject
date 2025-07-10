@@ -13,10 +13,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum CategoryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Category {
+  id      Int           @id @default(autoincrement())
+  name    String        @unique
+  status  CategoryStatus @default(ACTIVE)
+  posts   Post[]
+  users   User[]   @relation("UserSubscription")
+}
+
 model Post {
-  id      Int     @id @default(autoincrement())
-  title   String
-  content String
+  uuid          String    @id @default(uuid())
+  title         String
+  content       String
+  category      Category  @relation(fields: [categoryName], references: [name])
+  categoryName   String
 }
 
 model User{
@@ -26,4 +41,6 @@ model User{
   email       String
   studentId   String
   phoneNumber String
+
+  subscribes   Category[] @relation("UserSubscription")
 }

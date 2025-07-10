@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 
-export class CreatePostParamDTO {
+export class CategoryDto {
   @IsString()
-  @ApiProperty({ example: 'abcd' })
-  readonly uuid: string;
+  @ApiProperty({ example: 'category' })
+  readonly category: string;
 }
