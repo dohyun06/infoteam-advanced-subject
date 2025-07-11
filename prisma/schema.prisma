@@ -23,24 +23,34 @@ model Category {
   name    String        @unique
   status  CategoryStatus @default(ACTIVE)
   posts   Post[]
-  users   User[]   @relation("UserSubscription")
+  users   UserSubscription[]
 }
 
 model Post {
-  uuid          String    @id @default(uuid())
+  id          String    @id @default(uuid())
   title         String
   content       String
-  category      Category  @relation(fields: [categoryName], references: [name])
-  categoryName   String
+  category      Category  @relation(fields: [categoryId], references: [id])
+  categoryId  Int
 }
 
-model User{
-  uuid        String  @id  @default(uuid())
+model User {
+  id        String  @id  @default(uuid())
   sub         String
   name        String
   email       String
   studentId   String
   phoneNumber String
 
-  subcriptions   Category[] @relation("UserSubscription")
+  subscriptions UserSubscription[]
+}
+
+model UserSubscription {
+  userId      String
+  categoryId  Int
+
+  user        User     @relation(fields: [userId], references: [id])
+  category    Category @relation(fields: [categoryId], references: [id])
+
+  @@id([userId, categoryId])
 }

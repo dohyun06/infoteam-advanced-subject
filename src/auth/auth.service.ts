@@ -21,13 +21,11 @@ export class AuthService {
       await firstValueFrom(
         this.httpService.post(
           'https://api.idp.gistory.me/oauth/token',
-          {
-            body: new URLSearchParams({
-              grant_type: 'authorization_code',
-              code: code,
-              code_verifier: 'code_challenge',
-            }),
-          },
+          new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code,
+            code_verifier: 'code_challenge',
+          }),
           {
             headers: {
               Authorization: `Basic ${Buffer.from(
@@ -50,9 +48,8 @@ export class AuthService {
       )
     ).data;
 
-    if (!userInfo) {
+    if (userInfo) {
       this.authRepository.findOrCreateUser(userInfo);
-
       return {
         access_token: response.access_token,
       };

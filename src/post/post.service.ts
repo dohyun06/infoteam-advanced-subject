@@ -4,18 +4,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreatePostDTO } from './dto/createPost.dto';
+import { CreatePostDto } from './dto/createPost.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class PostService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getPost(uuid: string) {
+  async getPost(id: string) {
     return await this.prisma.post
       .findUnique({
         where: {
-          uuid: uuid,
+          id: id,
         },
       })
       .then((post) => {
@@ -24,7 +24,7 @@ export class PostService {
       });
   }
 
-  async makePost(body: CreatePostDTO) {
+  async makePost(body: CreatePostDto) {
     return await this.prisma.post
       .create({
         data: {
@@ -43,11 +43,11 @@ export class PostService {
       });
   }
 
-  async updatePost(uuid: string, body: CreatePostDTO) {
+  async updatePost(id: string, body: CreatePostDto) {
     return await this.prisma.post
       .update({
         where: {
-          uuid: uuid,
+          id: id,
         },
         data: {
           title: body.title,
@@ -68,11 +68,11 @@ export class PostService {
       });
   }
 
-  async deletePost(uuid: string) {
+  async deletePost(id: string) {
     return await this.prisma.post
       .delete({
         where: {
-          uuid: uuid,
+          id: id,
         },
       })
       .catch((error) => {
