@@ -17,6 +17,9 @@ export class AuthService {
     const clientId = this.configService.get<string>('CLIENT_ID');
     const clientSecret = this.configService.get<string>('CLIENT_SECRET');
 
+    // Get Code
+    // https://idp.gistory.me/authorize?client_id=7f16b001-6333-4106-8e60-7f397dad86b1&redirect_uri=http://localhost:3000/redirect&response_type=code&scope=profile student_id email phone_number&code_challenge=code_challenge&code_challenge_method=plain
+
     const response = (
       await firstValueFrom(
         this.httpService.post(

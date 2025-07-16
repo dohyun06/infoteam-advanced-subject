@@ -6,10 +6,16 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePostDto } from './dto/createPost.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { Observable, firstValueFrom } from 'rxjs';
+import { HttpService } from '@nestjs/axios';
+import { UserDto } from 'src/user/dto/user.dto';
 
 @Injectable()
 export class PostService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly httpService: HttpService,
+  ) {}
 
   async getPost(id: string) {
     return await this.prisma.post
@@ -25,13 +31,37 @@ export class PostService {
   }
 
   async makePost(body: CreatePostDto) {
+    const users: UserDto[] = await this.prisma.user.findMany({
+      where: {
+        subscriptions: { some: { categoryId: body.category } },
+      },
+    });
+
+    const observable = new Observable((subscriber) => {
+      users.forEach((user) => {
+        console.log(user.id);
+        subscriber.next(user.id);
+      });
+    });
+
+    observable.subscribe({
+      next: async (id) => {
+        const response = await firstValueFrom(
+          this.httpService.post('http://localhost:8090/api/push', {
+            deviceId: id,
+          }),
+        );
+        console.log(response.data);
+      },
+    });
+
     return await this.prisma.post
       .create({
         data: {
           title: body.title,
           content: body.content,
           category: {
-            connect: { name: body.category },
+            connect: { id: body.category },
           },
         },
       })
@@ -53,7 +83,7 @@ export class PostService {
           title: body.title,
           content: body.content,
           category: {
-            connect: { name: body.category },
+            connect: { id: body.category },
           },
         },
       })
