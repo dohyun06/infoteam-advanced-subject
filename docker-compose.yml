@@ -20,17 +20,24 @@ services:
       - '3000:3000'
     depends_on:
       - db
+      - push-server
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
     networks:
       - app-network
+      - app-server
 
   push-server:
     image: yeonhyukkim/fake-push-server:latest
     ports:
       - '8090:8090'
+    networks:
+      - app-server
 
 networks:
   app-network:
+    driver: bridge
+
+  app-server:
     driver: bridge

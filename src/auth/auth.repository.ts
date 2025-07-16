@@ -12,7 +12,6 @@ export class AuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findOrCreateUser(userInfo) {
-    console.log(userInfo.sub);
     return await this.prisma.user
       .findFirst({ where: { sub: userInfo.sub } })
       .then(async (user) => {
