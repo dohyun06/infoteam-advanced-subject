@@ -13,6 +13,7 @@ async function bootstrap() {
     .setDescription('infoteam be subject')
     .setVersion('1.0')
     .addTag('infoteam')
+    .addBearerAuth()
     .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);

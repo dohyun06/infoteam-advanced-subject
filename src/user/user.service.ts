@@ -36,12 +36,23 @@ export class UserService {
       });
   }
 
-  async subscribeCategory(id: string, category: number) {
+  async subscribeCategory({ userInfo }, category: number) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        sub: userInfo.sub,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!user) throw new NotFoundException('User id is not found');
+
     return await this.prisma.userSubscription
       .create({
         data: {
           user: {
-            connect: { id: id },
+            connect: { id: user.id },
           },
           category: {
             connect: { id: category },
@@ -59,12 +70,23 @@ export class UserService {
       });
   }
 
-  async unsubscribeCategory(id: string, category: number) {
+  async unsubscribeCategory({ userInfo }, category: number) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        sub: userInfo.sub,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!user) throw new NotFoundException('User id is not found');
+
     return await this.prisma.userSubscription
       .delete({
         where: {
           userId_categoryId: {
-            userId: id,
+            userId: user.id,
             categoryId: category,
           },
         },
@@ -72,7 +94,7 @@ export class UserService {
       .catch((err) => {
         if (err instanceof Prisma.PrismaClientKnownRequestError) {
           if (err.code === 'P2025') {
-            throw new NotFoundException('User uuid is not found');
+            throw new NotFoundException('User id is not found');
           }
           throw new InternalServerErrorException('Database Error');
         }

@@ -6,12 +6,15 @@ import {
   Param,
   Patch,
   Post,
+  Req,
   UseFilters,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserDto } from './dto/user.dto';
 import { GetUserDto } from './dto/getUser.dto';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
@@ -21,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 import { HttpExceptionFilter } from 'src/filter/http-exception.filter';
 import { SubscribeCategoryDto } from './dto/subscribeCategory.dto';
+import { IdPGuard } from 'src/auth/guard/idp.strategy';
 
 @Controller('user')
 @UseFilters(new HttpExceptionFilter())
@@ -46,21 +50,31 @@ export class UserController {
     return await this.userService.deleteUser(id);
   }
 
-  @Post('subscribe/:id/:category')
+  @Post('subscribe/:category')
   @ApiOperation({ summary: 'subscribe a category' })
   @ApiOkResponse({ type: UserDto, description: 'Return a subscription' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async subscribeCategory(@Param() { id, category }: SubscribeCategoryDto) {
-    return await this.userService.subscribeCategory(id, category);
+  @ApiBearerAuth()
+  @UseGuards(IdPGuard)
+  async subscribeCategory(
+    @Param() { category }: SubscribeCategoryDto,
+    @Req() req: Request & { user; token },
+  ) {
+    return await this.userService.subscribeCategory(req.user, category);
   }
 
-  @Delete('subscribe/:id/:category')
+  @Delete('subscribe/:category')
   @ApiOperation({ summary: 'unsubscribe a category' })
   @ApiOkResponse({ type: UserDto, description: 'Return a unsubscription' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async unsubscribeCategory(@Param() { id, category }: SubscribeCategoryDto) {
-    return await this.userService.unsubscribeCategory(id, category);
+  @ApiBearerAuth()
+  @UseGuards(IdPGuard)
+  async unsubscribeCategory(
+    @Param() { category }: SubscribeCategoryDto,
+    @Req() req: Request & { user; token },
+  ) {
+    return await this.userService.unsubscribeCategory(req.user, category);
   }
 }
