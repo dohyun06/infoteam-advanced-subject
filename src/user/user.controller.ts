@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   Param,
-  Patch,
   Post,
   Req,
   UseFilters,
@@ -24,7 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { HttpExceptionFilter } from 'src/filter/http-exception.filter';
 import { SubscribeCategoryDto } from './dto/subscribeCategory.dto';
-import { IdPGuard } from 'src/auth/guard/idp.strategy';
+import { IdPGuard } from 'src/auth/guard/idp.guard';
 
 @Controller('user')
 @UseFilters(new HttpExceptionFilter())
@@ -52,13 +51,14 @@ export class UserController {
 
   @Post('subscribe/:category')
   @ApiOperation({ summary: 'subscribe a category' })
+  @ApiBody({ type: SubscribeCategoryDto })
   @ApiOkResponse({ type: UserDto, description: 'Return a subscription' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth()
   @UseGuards(IdPGuard)
   async subscribeCategory(
-    @Param() { category }: SubscribeCategoryDto,
+    @Body() { category }: SubscribeCategoryDto,
     @Req() req: Request & { user; token },
   ) {
     return await this.userService.subscribeCategory(req.user, category);
@@ -66,13 +66,14 @@ export class UserController {
 
   @Delete('subscribe/:category')
   @ApiOperation({ summary: 'unsubscribe a category' })
+  @ApiBody({ type: SubscribeCategoryDto })
   @ApiOkResponse({ type: UserDto, description: 'Return a unsubscription' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth()
   @UseGuards(IdPGuard)
   async unsubscribeCategory(
-    @Param() { category }: SubscribeCategoryDto,
+    @Body() { category }: SubscribeCategoryDto,
     @Req() req: Request & { user; token },
   ) {
     return await this.userService.unsubscribeCategory(req.user, category);

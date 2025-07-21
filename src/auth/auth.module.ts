@@ -5,7 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { UserService } from 'src/user/user.service';
 import { HttpModule } from '@nestjs/axios';
 import { AuthRepository } from './auth.repository';
-import { IdPStrategy } from './guard/idp.guard';
+import { IdPStrategy } from './guard/idp.strategy';
 
 @Module({
   imports: [HttpModule],

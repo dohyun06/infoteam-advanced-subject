@@ -41,15 +41,7 @@ export class AuthService {
       )
     ).data;
 
-    const userInfo = (
-      await firstValueFrom(
-        this.httpService.get('https://api.idp.gistory.me/oauth/userinfo', {
-          headers: {
-            Authorization: `Bearer ${response.access_token}`,
-          },
-        }),
-      )
-    ).data;
+    const userInfo = this.idpUserInfo;
 
     if (userInfo) {
       this.authRepository.findOrCreateUser(userInfo);
@@ -58,5 +50,17 @@ export class AuthService {
       };
     }
     throw new UnauthorizedException();
+  }
+
+  async idpUserInfo(token: string) {
+    return (
+      await firstValueFrom(
+        this.httpService.get('https://api.idp.gistory.me/oauth/userinfo', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+      )
+    ).data;
   }
 }
