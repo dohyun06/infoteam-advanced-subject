@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   Req,
   UseFilters,
   UseGuards,
@@ -23,12 +24,25 @@ import {
 } from '@nestjs/swagger';
 import { HttpExceptionFilter } from 'src/filter/http-exception.filter';
 import { SubscribeCategoryDto } from './dto/subscribeCategory.dto';
-import { IdPGuard } from 'src/auth/guard/idp.guard';
+import { IdPGuard } from 'src/user/guard/idp.guard';
+import { LoginDto } from './dto/login.dto';
+import { TokenDto } from './dto/token.dto';
+import { UserRepository } from './user.repository';
 
 @Controller('user')
 @UseFilters(new HttpExceptionFilter())
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly userRepository: UserRepository,
+  ) {}
+
+  @Post('login')
+  @ApiOperation({ summary: 'create a user' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async login(@Query() { code }: LoginDto): Promise<TokenDto> {
+    return await this.userService.login(code);
+  }
 
   @Get('subscribe')
   @ApiBearerAuth()
@@ -51,7 +65,7 @@ export class UserController {
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async getUser(@Param() { id }: GetUserDto): Promise<UserDto> {
-    return await this.userService.getUser(id);
+    return await this.userRepository.getUser(id);
   }
 
   @Delete(':id')
@@ -60,7 +74,7 @@ export class UserController {
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async deleteUser(@Param() { id }: GetUserDto): Promise<UserDto> {
-    return await this.userService.deleteUser(id);
+    return await this.userRepository.deleteUser(id);
   }
 
   @Post('subscribe')

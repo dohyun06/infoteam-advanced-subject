@@ -1,153 +1,98 @@
 import {
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { UserDto } from './dto/user.dto';
-import { Prisma } from '@prisma/client';
-import { userInfo } from 'os';
+import { firstValueFrom } from 'rxjs';
+import { TokenDto } from './dto/token.dto';
+import { ConfigService } from '@nestjs/config';
+import { HttpService } from '@nestjs/axios';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly httpService: HttpService,
+    private readonly userRepository: UserRepository,
+  ) {}
 
-  async getSelf(userInfo): Promise<UserDto> {
-    return await this.prisma.user
-      .findUnique({
-        where: { sub: userInfo.sub },
-      })
-      .then((user) => {
-        if (!user) throw new NotFoundException('User uuid is not found');
-        return user;
-      });
+  async login(code: string): Promise<TokenDto> {
+    const clientId = this.configService.get<string>('CLIENT_ID');
+    const clientSecret = this.configService.get<string>('CLIENT_SECRET');
+
+    // Get Code
+    // https://idp.gistory.me/authorize?client_id=7f16b001-6333-4106-8e60-7f397dad86b1&redirect_uri=http://localhost:3000/redirect&response_type=code&scope=profile student_id email phone_number&code_challenge=code_challenge&code_challenge_method=plain
+
+    const response = (
+      await firstValueFrom(
+        this.httpService.post(
+          'https://api.idp.gistory.me/oauth/token',
+          new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code,
+            code_verifier: 'code_challenge',
+          }),
+          {
+            headers: {
+              Authorization: `Basic ${Buffer.from(
+                `${clientId}:${clientSecret}`,
+              ).toString('base64')}`,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+          },
+        ),
+      )
+    ).data;
+
+    const userInfo = this.idpUserInfo;
+
+    if (userInfo) {
+      this.userRepository.findOrCreateUser(userInfo);
+      return {
+        access_token: response.access_token,
+      };
+    }
+    throw new UnauthorizedException();
   }
 
   async getSubscribedCategories({ userInfo }) {
-    const user = await this.getSelf(userInfo);
+    const user = await this.userRepository.getSelf(userInfo);
 
-    return await this.prisma.userSubscription
-      .findMany({
-        where: {
-          userId: user.id,
-        },
-        select: {
-          category: {
-            select: {
-              id: true,
-              _count: {
-                select: {
-                  posts: {
-                    where: { authorId: user.id },
-                  },
-                },
-              },
-            },
-          },
-        },
-      })
-      .catch((err) => {
-        if (err instanceof Prisma.PrismaClientKnownRequestError) {
-          if (err.code === 'P2025') {
-            throw new NotFoundException('User uuid is not found');
-          }
-          throw new InternalServerErrorException('Database Error');
-        }
-        throw new InternalServerErrorException('Internal Server Error');
-      });
+    return this.userRepository.getSubscribedCategories(user);
   }
 
   async getUserPosts({ userInfo }) {
-    const user = await this.getSelf(userInfo);
+    const user = await this.userRepository.getSelf(userInfo);
 
-    return await this.prisma.post.findMany({
-      where: {
-        authorId: user.id,
-      },
-    });
-  }
-
-  async getUser(id: string): Promise<UserDto> {
-    return await this.prisma.user
-      .findUnique({ where: { id: id } })
-      .then((user) => {
-        if (!user) throw new NotFoundException('User uuid is not found');
-        return user;
-      });
-  }
-
-  async deleteUser(id: string) {
-    return await this.prisma.user
-      .delete({
-        where: { id: id },
-      })
-      .catch((err) => {
-        if (err instanceof Prisma.PrismaClientKnownRequestError) {
-          if (err.code === 'P2025') {
-            throw new NotFoundException('User uuid is not found');
-          }
-          throw new InternalServerErrorException('Database Error');
-        }
-        throw new InternalServerErrorException('Internal Server Error');
-      });
+    return await this.userRepository.getUserPosts(user);
   }
 
   async subscribeCategory({ userInfo }, category: number) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        sub: userInfo.sub,
-      },
-      select: {
-        id: true,
-      },
-    });
+    const user = await this.userRepository.getSelf(userInfo);
 
     if (!user) throw new NotFoundException('User id is not found');
 
-    return await this.prisma.userSubscription
-      .create({
-        data: {
-          user: {
-            connect: { id: user.id },
-          },
-          category: {
-            connect: { id: category },
-          },
-        },
-      })
-      .catch((err) => {
-        if (err instanceof Prisma.PrismaClientKnownRequestError) {
-          if (err.code === 'P2025') {
-            throw new NotFoundException('User uuid is not found');
-          }
-          throw new InternalServerErrorException('Database Error');
-        }
-        throw new InternalServerErrorException('Internal Server Error');
-      });
+    return await this.userRepository.subscribeCateogry(user, category);
   }
 
   async unsubscribeCategory({ userInfo }, category: number) {
-    const user = await this.getUser(userInfo);
+    const user = await this.userRepository.getUser(userInfo);
 
     if (!user) throw new NotFoundException('User id is not found');
 
-    return await this.prisma.userSubscription
-      .delete({
-        where: {
-          userId_categoryId: {
-            userId: user.id,
-            categoryId: category,
+    return this.userRepository.unsubscribeCategory(user, category);
+  }
+
+  async idpUserInfo(token: string) {
+    return (
+      await firstValueFrom(
+        this.httpService.get('https://api.idp.gistory.me/oauth/userinfo', {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-        },
-      })
-      .catch((err) => {
-        if (err instanceof Prisma.PrismaClientKnownRequestError) {
-          if (err.code === 'P2025') {
-            throw new NotFoundException('User id is not found');
-          }
-          throw new InternalServerErrorException('Database Error');
-        }
-        throw new InternalServerErrorException('Internal Server Error');
-      });
+        }),
+      )
+    ).data;
   }
 }

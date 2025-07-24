@@ -22,22 +22,18 @@ services:
       - db
       - push-server
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@db:5432/infoteam_subject
       - JWT_SECRET=${JWT_SECRET}
     networks:
       - app-network
-      - app-server
 
   push-server:
     image: yeonhyukkim/fake-push-server:latest
     ports:
       - '8090:8090'
     networks:
-      - app-server
+      - app-network
 
 networks:
   app-network:
-    driver: bridge
-
-  app-server:
     driver: bridge
