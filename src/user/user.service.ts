@@ -45,7 +45,7 @@ export class UserService {
       )
     ).data;
 
-    const userInfo = this.idpUserInfo;
+    const userInfo = await this.idpUserInfo(response.access_token);
 
     if (userInfo) {
       this.userRepository.findOrCreateUser(userInfo);
