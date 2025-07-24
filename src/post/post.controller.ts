@@ -6,11 +6,13 @@ import {
   Param,
   Post,
   Put,
+  Req,
   UseFilters,
   UseGuards,
 } from '@nestjs/common';
 import { CreatePostDto } from './dto/createPost.dto';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
@@ -21,27 +23,43 @@ import { PostService } from './post.service';
 import { CreatePostParamDto } from './dto/createPostParam.dto';
 import { HttpExceptionFilter } from 'src/filter/http-exception.filter';
 import { CategoryDto } from './dto/category.dto';
+import { IdPGuard } from 'src/auth/guard/idp.guard';
+import { PostRepository } from './post.repository';
 
 @Controller('post')
 @UseFilters(new HttpExceptionFilter())
 export class PostController {
-  constructor(private readonly postService: PostService) {}
+  constructor(
+    private readonly postService: PostService,
+    private readonly postRepository: PostRepository,
+  ) {}
+
+  @Get('category')
+  @ApiOperation({ summary: 'get categories and counts of posts' })
+  async getCategories() {
+    return await this.postService.getCategories();
+  }
 
   @Get(':id')
   @ApiOperation({ summary: 'get a post' })
   @ApiOkResponse({ type: CreatePostDto, description: 'Return posts' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async sendPost(@Param() { id }: CreatePostParamDto) {
-    return await this.postService.getPost(id);
+  async getPost(@Param() { id }: CreatePostParamDto) {
+    return await this.postRepository.getPost(id);
   }
 
   @Post()
   @ApiOperation({ summary: 'generate a post' })
   @ApiBody({ type: CreatePostDto })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async createPost(@Body() body: CreatePostDto) {
-    return await this.postService.makePost(body);
+  @ApiBearerAuth()
+  @UseGuards(IdPGuard)
+  async createPost(
+    @Body() body: CreatePostDto,
+    @Req() req: Request & { user; token },
+  ) {
+    return await this.postService.makePost(body, req.user);
   }
 
   @Put(':id')
@@ -62,6 +80,12 @@ export class PostController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async deletePost(@Param() { id }: CreatePostParamDto) {
     return await this.postService.deletePost(id);
+  }
+
+  @Get('category/subscribers')
+  @ApiOperation({ summary: 'get how many user subscribe the categories' })
+  async getCategorySubscribers() {
+    return this.postService.getCategoriesSubscribers();
   }
 
   @Post('category/:category')

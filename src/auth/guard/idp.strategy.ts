@@ -10,7 +10,7 @@ export class IdPStrategy extends PassportStrategy(Strategy, 'idp') {
   }
 
   async validate(token: string) {
-    const userInfo = this.authService.idpUserInfo(token);
+    const userInfo = await this.authService.idpUserInfo(token);
     return { userInfo, token };
   }
 }

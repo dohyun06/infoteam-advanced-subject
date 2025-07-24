@@ -30,6 +30,20 @@ import { IdPGuard } from 'src/auth/guard/idp.guard';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Get('subscribe')
+  @ApiBearerAuth()
+  @UseGuards(IdPGuard)
+  async getSubscribedCategories(@Req() req: Request & { user; token }) {
+    return await this.userService.getSubscribedCategories(req.user);
+  }
+
+  @Get('post')
+  @ApiBearerAuth()
+  @UseGuards(IdPGuard)
+  async getUserPosts(@Req() req: Request & { user; token }) {
+    return await this.userService.getUserPosts(req.user);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'get a user' })
   @ApiOkResponse({ type: UserDto, description: 'Return a user' })
@@ -49,7 +63,7 @@ export class UserController {
     return await this.userService.deleteUser(id);
   }
 
-  @Post('subscribe/:category')
+  @Post('subscribe')
   @ApiOperation({ summary: 'subscribe a category' })
   @ApiBody({ type: SubscribeCategoryDto })
   @ApiOkResponse({ type: UserDto, description: 'Return a subscription' })
@@ -64,14 +78,12 @@ export class UserController {
     return await this.userService.subscribeCategory(req.user, category);
   }
 
-  @Delete('subscribe/:category')
+  @Post('unsubscribe')
   @ApiOperation({ summary: 'unsubscribe a category' })
   @ApiBody({ type: SubscribeCategoryDto })
   @ApiOkResponse({ type: UserDto, description: 'Return a unsubscription' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth()
-  @UseGuards(IdPGuard)
   async unsubscribeCategory(
     @Body() { category }: SubscribeCategoryDto,
     @Req() req: Request & { user; token },

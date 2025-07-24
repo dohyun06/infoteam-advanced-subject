@@ -11,28 +11,23 @@ import { Observable, firstValueFrom, from, map, mergeMap, toArray } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { UserDto } from 'src/user/dto/user.dto';
 import { response } from 'express';
+import { UserService } from 'src/user/user.service';
+import { PostRepository } from './post.repository';
 
 @Injectable()
 export class PostService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly httpService: HttpService,
+    private readonly userService: UserService,
+    private readonly postRepository: PostRepository,
   ) {}
 
-  async getPost(id: string) {
-    return await this.prisma.post
-      .findUnique({
-        where: {
-          id: id,
-        },
-      })
-      .then((post) => {
-        if (!post) throw new NotFoundException('Post uuid is not found');
-        return post;
-      });
-  }
+  async makePost(body: CreatePostDto, { userInfo }) {
+    const user = await this.userService.getSelf(userInfo);
 
-  async makePost(body: CreatePostDto) {
+    if (!user) throw new NotFoundException('User id is not found');
+
     if (
       !(await this.prisma.category.findUnique({ where: { id: body.category } }))
     ) {
@@ -62,12 +57,16 @@ export class PostService {
         error: (err) => console.error(err),
         complete: () => console.log('Complete'),
       });
+    console.log(user, body);
 
     return await this.prisma.post
       .create({
         data: {
           title: body.title,
           content: body.content,
+          author: {
+            connect: { id: user.id },
+          },
           category: {
             connect: { id: body.category },
           },
@@ -118,6 +117,54 @@ export class PostService {
           if (error.code === 'P2025') {
             throw new NotFoundException('Post uuid is not found');
           }
+          throw new InternalServerErrorException('Database Error');
+        }
+        throw new InternalServerErrorException('Internal Server Error');
+      });
+  }
+
+  async getCategories() {
+    return await this.prisma.category
+      .findMany({
+        where: {
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+          name: true,
+          _count: {
+            select: {
+              posts: true,
+            },
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          throw new InternalServerErrorException('Database Error');
+        }
+        throw new InternalServerErrorException('Internal Server Error');
+      });
+  }
+
+  async getCategoriesSubscribers() {
+    return await this.prisma.category
+      .findMany({
+        where: {
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+          name: true,
+          _count: {
+            select: {
+              users: true,
+            },
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
           throw new InternalServerErrorException('Database Error');
         }
         throw new InternalServerErrorException('Internal Server Error');
