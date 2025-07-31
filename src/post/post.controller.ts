@@ -24,20 +24,16 @@ import { CreatePostParamDto } from './dto/createPostParam.dto';
 import { HttpExceptionFilter } from 'src/filter/http-exception.filter';
 import { CategoryDto } from './dto/category.dto';
 import { IdPGuard } from 'src/user/guard/idp.guard';
-import { PostRepository } from './post.repository';
 
 @Controller('post')
 @UseFilters(new HttpExceptionFilter())
 export class PostController {
-  constructor(
-    private readonly postService: PostService,
-    private readonly postRepository: PostRepository,
-  ) {}
+  constructor(private readonly postService: PostService) {}
 
   @Get('category')
   @ApiOperation({ summary: 'get categories and counts of posts' })
   async getCategories() {
-    return await this.postRepository.getCategories();
+    return await this.postService.getCategories();
   }
 
   @Get(':id')
@@ -46,7 +42,7 @@ export class PostController {
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async getPost(@Param() { id }: CreatePostParamDto) {
-    return await this.postRepository.getPost(id);
+    return await this.postService.getPost(id);
   }
 
   @Post()
@@ -71,7 +67,7 @@ export class PostController {
     @Param() { id }: CreatePostParamDto,
     @Body() body: CreatePostDto,
   ) {
-    return await this.postRepository.updatePost(id, body);
+    return await this.postService.updatePost(id, body);
   }
 
   @Delete(':id')
@@ -79,20 +75,20 @@ export class PostController {
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async deletePost(@Param() { id }: CreatePostParamDto) {
-    return await this.postRepository.deletePost(id);
+    return await this.postService.deletePost(id);
   }
 
   @Get('category/subscribers')
   @ApiOperation({ summary: 'get how many user subscribe the categories' })
   async getCategorySubscribers() {
-    return this.postRepository.getCategoriesSubscribers();
+    return this.postService.getCategoriesSubscribers();
   }
 
   @Post('category/:category')
   @ApiOperation({ summary: 'add a category' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async addCategory(@Param() { category }: CategoryDto) {
-    return await this.postRepository.addCategory(category);
+    return await this.postService.addCategory(category);
   }
 
   @Delete('category/:category')
@@ -100,6 +96,6 @@ export class PostController {
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async deleteCategory(@Param() { category }: CategoryDto) {
-    return await this.postRepository.deleteCategory(category);
+    return await this.postService.deleteCategory(category);
   }
 }

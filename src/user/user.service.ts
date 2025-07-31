@@ -8,6 +8,7 @@ import { TokenDto } from './dto/token.dto';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { UserRepository } from './user.repository';
+import { UserDto } from './dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -86,12 +87,20 @@ export class UserService {
     return await this.userRepository.subscribeCateogry(user, category);
   }
 
+  async getUser(id: string): Promise<UserDto> {
+    return await this.userRepository.getUser(id);
+  }
+
   async unsubscribeCategory({ userInfo }, category: number) {
     const user = await this.userRepository.getUser(userInfo);
 
     if (!user) throw new NotFoundException('User id is not found');
 
     return this.userRepository.unsubscribeCategory(user, category);
+  }
+
+  async deleteUser(id: string) {
+    return await this.userRepository.deleteUser(id);
   }
 
   async idpUserInfo(token: string) {

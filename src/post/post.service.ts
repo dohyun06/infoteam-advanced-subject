@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -11,6 +12,7 @@ import { UserDto } from 'src/user/dto/user.dto';
 import { PostRepository } from './post.repository';
 import { UserRepository } from 'src/user/user.repository';
 import { ConfigService } from '@nestjs/config';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class PostService {
@@ -23,6 +25,10 @@ export class PostService {
     private readonly configService: ConfigService,
   ) {
     this.pushServer = configService.get<string>('PUSH_SERVER') as string;
+  }
+
+  async getPost(id: string) {
+    return await this.postRepository.getPost(id);
   }
 
   async makePost(body: CreatePostDto, { userInfo }) {
@@ -61,5 +67,29 @@ export class PostService {
       });
 
     return await this.postRepository.makePost(body, user);
+  }
+
+  async updatePost(id: string, body: CreatePostDto) {
+    return await this.postRepository.updatePost(id, body);
+  }
+
+  async deletePost(id: string) {
+    return await this.postRepository.deletePost(id);
+  }
+
+  async getCategories() {
+    return await this.postRepository.getCategories();
+  }
+
+  async getCategoriesSubscribers() {
+    return await this.postRepository.getCategoriesSubscribers();
+  }
+
+  async addCategory(category: string) {
+    return await this.postRepository.addCategory(category);
+  }
+
+  async deleteCategory(category: string) {
+    return await this.postRepository.deleteCategory(category);
   }
 }

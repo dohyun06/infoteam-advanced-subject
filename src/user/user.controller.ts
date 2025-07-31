@@ -27,15 +27,11 @@ import { SubscribeCategoryDto } from './dto/subscribeCategory.dto';
 import { IdPGuard } from 'src/user/guard/idp.guard';
 import { LoginDto } from './dto/login.dto';
 import { TokenDto } from './dto/token.dto';
-import { UserRepository } from './user.repository';
 
 @Controller('user')
 @UseFilters(new HttpExceptionFilter())
 export class UserController {
-  constructor(
-    private readonly userService: UserService,
-    private readonly userRepository: UserRepository,
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
   @Post('login')
   @ApiOperation({ summary: 'create a user' })
@@ -65,7 +61,7 @@ export class UserController {
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async getUser(@Param() { id }: GetUserDto): Promise<UserDto> {
-    return await this.userRepository.getUser(id);
+    return await this.userService.getUser(id);
   }
 
   @Delete(':id')
@@ -74,7 +70,7 @@ export class UserController {
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async deleteUser(@Param() { id }: GetUserDto): Promise<UserDto> {
-    return await this.userRepository.deleteUser(id);
+    return await this.userService.deleteUser(id);
   }
 
   @Post('subscribe')
