@@ -6,16 +6,10 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePostDto } from './dto/createPost.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { HttpService } from '@nestjs/axios';
-import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class PostRepository {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly httpService: HttpService,
-    private readonly userService: UserService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getPost(id: string) {
     return await this.prisma.post

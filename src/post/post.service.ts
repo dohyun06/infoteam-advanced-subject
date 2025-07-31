@@ -47,7 +47,7 @@ export class PostService {
         mergeMap(async (user) => {
           (
             await firstValueFrom(
-              this.httpService.post(`http://${pushServer}:8090/api/push`, {
+              this.httpService.post(pushServer!, {
                 deviceId: user.id,
               }),
             )

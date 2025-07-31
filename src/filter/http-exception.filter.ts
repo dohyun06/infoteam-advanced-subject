@@ -13,16 +13,20 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const { method, url, body, params } = ctx.getRequest<Request>();
     const status = exception.getStatus();
 
-    this.logger.debug(exception.message + ' : ' + request.url);
+    this.logger.debug(
+      `${exception.message} : ${method} ${url} ${JSON.stringify(method === 'GET' ? params : body)}`,
+    );
 
     response.status(status).send({
       statusCode: status,
       message: exception.message,
       timestamp: new Date().toISOString(),
-      path: request.url,
+      method: method,
+      path: url,
+      body: body ?? null,
     });
   }
 }
