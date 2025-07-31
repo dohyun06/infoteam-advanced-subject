@@ -11,23 +11,33 @@ import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UserService {
+  private readonly clientId: string;
+  private readonly clientSecret: string;
+  private readonly idpUrlToken: string;
+  private readonly idpUrlUser: string;
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
     private readonly userRepository: UserRepository,
-  ) {}
+  ) {
+    this.clientId = this.configService.get<string>('CLIENT_ID') as string;
+    this.clientSecret = this.configService.get<string>(
+      'CLIENT_SECRET',
+    ) as string;
+    this.idpUrlToken = this.configService.get<string>(
+      'IDP_URL_TOKEN',
+    ) as string;
+    this.idpUrlUser = this.configService.get<string>('IDP_URL_USER') as string;
+  }
 
   async login(code: string): Promise<TokenDto> {
-    const clientId = this.configService.get<string>('CLIENT_ID');
-    const clientSecret = this.configService.get<string>('CLIENT_SECRET');
-
     // Get Code
     // https://idp.gistory.me/authorize?client_id=7f16b001-6333-4106-8e60-7f397dad86b1&redirect_uri=http://localhost:3000/redirect&response_type=code&scope=profile student_id email phone_number&code_challenge=code_challenge&code_challenge_method=plain
 
     const response = (
       await firstValueFrom(
         this.httpService.post(
-          'https://api.idp.gistory.me/oauth/token',
+          this.idpUrlToken,
           new URLSearchParams({
             grant_type: 'authorization_code',
             code: code,
@@ -36,7 +46,7 @@ export class UserService {
           {
             headers: {
               Authorization: `Basic ${Buffer.from(
-                `${clientId}:${clientSecret}`,
+                `${this.clientId}:${this.clientSecret}`,
               ).toString('base64')}`,
               'Content-Type': 'application/x-www-form-urlencoded',
             },
@@ -87,7 +97,7 @@ export class UserService {
   async idpUserInfo(token: string) {
     return (
       await firstValueFrom(
-        this.httpService.get('https://api.idp.gistory.me/oauth/userinfo', {
+        this.httpService.get(this.idpUrlUser, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

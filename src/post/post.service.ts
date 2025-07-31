@@ -1,12 +1,10 @@
 import {
   BadRequestException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePostDto } from './dto/createPost.dto';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { firstValueFrom, from, mergeMap, toArray } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { UserDto } from 'src/user/dto/user.dto';
@@ -16,13 +14,16 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PostService {
+  private readonly pushServer: string;
   constructor(
     private readonly prisma: PrismaService,
     private readonly httpService: HttpService,
     private readonly userRepository: UserRepository,
     private readonly postRepository: PostRepository,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    this.pushServer = configService.get<string>('PUSH_SERVER') as string;
+  }
 
   async makePost(body: CreatePostDto, { userInfo }) {
     const user = await this.userRepository.getSelf(userInfo);
@@ -40,14 +41,12 @@ export class PostService {
       },
     });
 
-    const pushServer = this.configService.get<string>('PUSH_SERVER');
-
     from(users)
       .pipe(
         mergeMap(async (user) => {
           (
             await firstValueFrom(
-              this.httpService.post(pushServer!, {
+              this.httpService.post(this.pushServer, {
                 deviceId: user.id,
               }),
             )
