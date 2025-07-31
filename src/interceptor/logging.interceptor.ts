@@ -11,7 +11,6 @@ import { Request, Response } from 'express';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  // Logger 인스턴스 생성
   private readonly logger = new Logger(LoggingInterceptor.name);
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -28,7 +27,7 @@ export class LoggingInterceptor implements NestInterceptor {
       tap((data) => {
         const resTimestamp = new Date().toISOString();
         this.logger.log(
-          `[Response] : ${resTimestamp} | ${response.status} ${method} ${url} ${JSON.stringify(data) ?? ''}`,
+          `[Response] : ${resTimestamp} | ${response.statusCode} ${method} ${url} ${JSON.stringify(data) ?? ''}`,
         );
       }),
     );
